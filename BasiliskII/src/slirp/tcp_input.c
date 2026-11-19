@@ -621,7 +621,17 @@ findso:
 	    goto dropwithreset;
 	  if ((tiflags & TH_SYN) == 0)
 	    goto drop;
-		
+
+	  /*
+	   * Fill in the header template now, not only once the host's connect() has succeeded
+	   * (cont_input): tcp_output() and the keepalive timer copy it into every segment they
+	   * send, and a segment sent while the connect is still pending (an unanswered SYN, a
+	   * slow host) otherwise goes out with IP protocol 0 and zero addresses.  MacTCP 2.0.4
+	   * looks protocol 0 up in its handler table, finds no handler and jumps to address 0
+	   * (System Error 3); on the Basilisk II rig the Mac then hangs closing the app's files.
+	   */
+	  tcp_template(tp);
+
 	  /*
 	   * This has way too many gotos...
 	   * But a bit of spaghetti code never hurt anybody :)
